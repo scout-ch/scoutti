@@ -1,0 +1,75 @@
+version: "3.8"
+services:
+  scoutti:
+    image: ghcr.io/scout-ch/scoutti:latest
+    networks:
+      - traefik-public
+    environment:
+      NODE_ENV: production
+      MONGO_DB_STRING: DOCKER-SECRET->MONGO_DB_STRING_CROWDMANAGER
+      AZURE_AD_CLIENT_ID: DOCKER-SECRET->AZURE_AD_CLIENT_ID
+      AZURE_AD_CLIENT_SECRET: DOCKER-SECRET->AZURE_AD_CLIENT_SECRET
+      AZURE_AD_TENANT_ID: DOCKER-SECRET->AZURE_AD_TENANT_ID
+      NEXT_PUBLIC: PUBLIC
+      NEXTAUTH_URL: https://crowdmanager.app.levell.ch
+      NEXTAUTH_SECRET: DOCKER-SECRET->NEXTAUTH_SECRET
+      PUSHER_APP_ID: DOCKER-SECRET->PUSHER_APP_ID
+      PUSHER_APP_KEY: DOCKER-SECRET->PUSHER_APP_KEY
+      PUSHER_APP_SECRET: DOCKER-SECRET->PUSHER_APP_SECRET
+      NEXT_PUBLIC_AUTH_PUSHER_APP_KEY: DOCKER-SECRET->PUSHER_APP_KEY
+    secrets:
+      - MONGO_DB_STRING_CROWDMANAGER
+      - AZURE_AD_CLIENT_ID
+      - AZURE_AD_CLIENT_SECRET
+      - AZURE_AD_TENANT_ID
+      - NEXTAUTH_SECRET
+      - PUSHER_APP_ID
+      - PUSHER_APP_KEY
+      - PUSHER_APP_SECRET
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true # enable traefik
+        - traefik.docker.network=traefik-public # put it in the same network as traefik
+        - traefik.constraint-label=traefik-public # assign the same label as traefik so it can be discovered
+        - traefik.http.routers.crowdmanager.rule=Host(`crowdmanager.app.levell.ch`) # listen to port 80 for request to APP_DOMAIN (use together with the line below)
+        - traefik.http.routers.crowdmanager.entrypoints=http
+        - traefik.http.routers.crowdmanager.middlewares=https-redirect
+        - traefik.http.middlewares.crowdmanager.redirectscheme.scheme=https # redirect traffic to https
+        - traefik.http.middlewares.crowdmanager.redirectscheme.permanent=true # redirect traffic to https
+        - traefik.http.routers.crowdmanager-secured.rule=Host(`crowdmanager.app.levell.ch`) # listen to port 443 for request to APP_DOMAIN (use together with the line below)
+        - traefik.http.routers.crowdmanager-secured.entrypoints=https
+        - traefik.http.routers.crowdmanager-secured.tls.certresolver=le # use the Let's Encrypt certificate we set up earlier
+        - traefik.http.services.crowdmanager-secured.loadbalancer.server.port=3000 # ask Traefik to search for port of the service container
+
+        # redundancy required configuration - allowing load balancer to handle multiple replicas
+        - traefik.http.services.crowdmanager-secured.loadbalancer.sticky=true
+        - traefik.http.services.crowdmanager-secured.loadbalancer.sticky.cookie.name=StickyCookie
+        - traefik.http.services.crowdmanager-secured.loadbalancer.sticky.cookie.secure=true
+
+networks:
+  traefik-public:
+    external: true
+
+secrets:
+  MONGO_DB_STRING_CROWDMANAGER:
+    external: true
+  AZURE_AD_CLIENT_ID:
+    external: true
+  AZURE_AD_CLIENT_SECRET:
+    external: true
+  AZURE_AD_TENANT_ID:
+    external: true
+  NEXTAUTH_SECRET:
+    external: true
+  PUSHER_APP_ID:
+    external: true
+  PUSHER_APP_KEY:
+    external: true
+  PUSHER_APP_SECRET:
+    external: true

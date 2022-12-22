@@ -1,0 +1,14 @@
+// devcontainer for next.js application
+{
+  "name": "Existing Docker Compose - Next.js",
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+  "service": "scoutti",
+  "workspaceFolder": "/app",
+  "forwardPorts": [
+    3000
+  ],
+  "shutdownAction": "stopCompose",
+  "overrideCommand": true
+}

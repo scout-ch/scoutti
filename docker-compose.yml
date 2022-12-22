@@ -1,0 +1,14 @@
+version: '3.9'
+services:
+  scoutti:
+    build:
+      target: scoutti-dev
+      dockerfile: Dockerfile
+    user: '${UID:-0}:${GID:-0}'
+    ports:
+      - '3000:3000'
+    restart: always
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - '.:/app'
